@@ -2,6 +2,8 @@
 
 An educational alpha prototype for managing a rotating savings circle of ten friends in Blanchardstown, Dublin 15.
 
+### ▶ Try the live demo: https://morabaa-1.github.io/the-circle/app.html
+
 **This is a demo.** All members and payments are fictional. No real money is held or moved.
 
 ## Pages
