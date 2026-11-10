@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="The Circle helps the organiser of a savings circle see who has paid, whose turn is next, and record each month. A demo with made-up data.">
+<meta name="color-scheme" content="light dark">
+<title>The Circle</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --surface-2: #f7f7f9;
+    --text: #0c0c10;
+    --muted: #4a4a55;
+    --border: #e3e3e8;
+    --accent: #4338ca;
+    --accent-hover: #3730a3;
+    --accent-text: #ffffff;
+    --accent-soft: #eef0ff;
+    --accent-line: #c7cbf5;
+    --paid: #157a3a;
+    --paid-soft: #e7f7ed;
+    --pending: #9a4405;
+    --pending-soft: #fff3e3;
+    --ring-empty: #dcdce2;
+    --shadow: 0 1px 2px rgba(16, 16, 24, .05), 0 4px 16px rgba(16, 16, 24, .05);
+    --radius: 20px;
+    --radius-sm: 14px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0a0a0d; --surface: #15151a; --surface-2: #1c1c22; --text: #f4f4f6; --muted: #b4b4be;
+      --border: #2a2a32; --accent: #8f97ff; --accent-hover: #aab0ff; --accent-text: #0a0a0d;
+      --accent-soft: #1d1f3a; --accent-line: #3a3f7a;
+      --paid: #4ade80; --paid-soft: #10261a; --pending: #fbbf24; --pending-soft: #2a1f0b; --ring-empty: #34343e;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .25);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0a0d; --surface: #15151a; --surface-2: #1c1c22; --text: #f4f4f6; --muted: #b4b4be;
+    --border: #2a2a32; --accent: #8f97ff; --accent-hover: #aab0ff; --accent-text: #0a0a0d;
+    --accent-soft: #1d1f3a; --accent-line: #3a3f7a;
+    --paid: #4ade80; --paid-soft: #10261a; --pending: #fbbf24; --pending-soft: #2a1f0b; --ring-empty: #34343e;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .25);
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 18px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); }
+  b, strong { font-weight: 700; }
+  :focus { outline: none; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 10px; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+
+  /* ---------- Header ---------- */
+  header.top { padding: 14px 0 6px; }
+  .top-inner { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-weight: 700; font-size: 20px; letter-spacing: -.01em; white-space: nowrap; }
+  .brand svg { flex: none; }
+  .badge { display: inline-flex; align-items: center; font-size: 15px; font-weight: 700; color: var(--pending); background: var(--pending-soft); padding: 4px 12px; border-radius: 999px; white-space: nowrap; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 56px; padding: 10px 22px; border-radius: 14px;
+    border: 2px solid var(--border); background: var(--surface); color: var(--text);
+    font-weight: 700; font-size: 18px; line-height: 1.3; text-align: center; text-decoration: none; cursor: pointer;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); min-height: 60px; font-size: 19px; box-shadow: 0 6px 18px rgba(67, 56, 202, .25); }
+  .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn.secondary { color: var(--accent); border-color: var(--accent-line); background: var(--surface); }
+  .btn.secondary:hover { background: var(--accent-soft); }
+  .btn svg { flex: none; }
+  .cta-group { display: grid; gap: 12px; margin-top: 24px; }
+  .cta-note { margin: 2px 0 0; font-size: 16px; color: var(--muted); text-align: center; }
+  @media (min-width: 560px) {
+    .cta-group { grid-template-columns: auto auto; justify-content: start; }
+    .cta-group .cta-note { grid-column: 1 / -1; text-align: left; }
+  }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 20px 0 36px; display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); }
+  .eyebrow { display: inline-block; font-size: 15px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 6px 12px; border-radius: 999px; margin: 0 0 16px; }
+  .hero h1 { font-size: 34px; line-height: 1.12; letter-spacing: -.03em; margin: 0 0 16px; font-weight: 800; }
+  .hero .sub { font-size: 20px; line-height: 1.5; color: var(--muted); margin: 0; max-width: 32em; }
+  .demo-note { display: flex; gap: 10px; align-items: flex-start; margin-top: 20px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--pending-soft); color: var(--text); font-size: 17px; line-height: 1.45; }
+  .demo-note svg { flex: none; color: var(--pending); margin-top: 2px; }
+  @media (min-width: 880px) {
+    .hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); align-items: center; gap: 48px; padding: 48px 0 56px; }
+    .hero h1 { font-size: 50px; }
+  }
+
+  /* ---------- Preview card (shows the demo's sample data) ---------- */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+  .preview .label { font-size: 15px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+  .preview-top { display: flex; align-items: center; gap: 18px; }
+  .ring { width: 112px; height: 112px; flex: none; position: relative; }
+  .ring svg { width: 100%; height: 100%; display: block; }
+  .ring .center { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring .amount { font-size: 22px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+  .ring .of { font-size: 15px; color: var(--muted); }
+  .stat-big { font-size: 21px; font-weight: 800; letter-spacing: -.02em; line-height: 1.25; }
+  .stat-sub { font-size: 16px; color: var(--muted); }
+  .preview-rows { list-style: none; margin: 18px 0 0; padding: 0; }
+  .preview-rows li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); font-size: 17px; }
+  .preview-rows .grow { flex: 1; min-width: 0; font-weight: 700; }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 700; white-space: nowrap; }
+  .status.paid { color: var(--paid); }
+  .status.pending { color: var(--pending); }
+  .turn { margin-top: 6px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--accent-soft); font-size: 17px; }
+  .preview .caption { margin: 14px 0 0; font-size: 15px; color: var(--muted); }
+
+  /* ---------- Sections ---------- */
+  section.block { padding: 36px 0; }
+  .block h2 { font-size: 30px; line-height: 1.2; letter-spacing: -.025em; margin: 0 0 12px; font-weight: 800; }
+  .block .lead { font-size: 19px; color: var(--muted); margin: 0 0 24px; max-width: 36em; }
+  @media (min-width: 880px) { .block h2 { font-size: 38px; } }
+
+  .problem { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  .problem .card h3 { font-size: 20px; margin: 0 0 12px; letter-spacing: -.01em; }
+  .problem ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+  .problem li { display: flex; gap: 12px; align-items: flex-start; font-size: 18px; line-height: 1.45; }
+  .dot-ico { flex: none; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: -2px; }
+  .dot-ico.before { background: var(--pending-soft); color: var(--pending); }
+  .dot-ico.after { background: var(--paid-soft); color: var(--paid); }
+  @media (min-width: 720px) { .problem { grid-template-columns: 1fr 1fr; } }
+
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  .step { position: relative; }
+  .step-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .step-num { flex: none; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--accent); color: var(--accent-text); font-weight: 800; font-size: 20px; }
+  .step-ico { margin-left: auto; flex: none; width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); }
+  .step h3 { font-size: 22px; line-height: 1.25; margin: 0; letter-spacing: -.015em; }
+  .step p { margin: 0; font-size: 18px; line-height: 1.5; color: var(--muted); }
+  .step .honest { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-size: 17px; }
+  @media (min-width: 880px) { .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+
+  .final { text-align: center; padding: 32px 20px; border: 2px solid var(--accent-line); }
+  .final h2 { margin-bottom: 10px; }
+  .final p { font-size: 19px; color: var(--muted); margin: 0 auto 22px; max-width: 30em; }
+  .final .btn { max-width: 420px; margin: 0 auto; }
+
+  footer { padding: 24px 0 48px; color: var(--muted); font-size: 16px; }
+  footer p { margin: 0 0 6px; }
+
+  /* ---------- Toast (only used if the form link is missing) ---------- */
+  .toast-region { position: fixed; left: 0; right: 0; bottom: 16px; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; justify-content: center; padding: 0 12px; pointer-events: none; z-index: 50; }
+  .toast { pointer-events: auto; background: var(--text); color: var(--bg); border-radius: 16px; padding: 14px 18px; max-width: 520px; width: 100%; font-size: 17px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+
+  @media (max-width: 420px) {
+    .hero h1 { font-size: 31px; }
+    .badge .long { display: none; }
+    .card { padding: 18px 16px; }
+  }
+  @media (max-width: 350px) {
+    body { font-size: 17px; }
+    .hero h1 { font-size: 28px; }
+    .preview-top { flex-direction: column; align-items: flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="index.html" aria-label="The Circle — home">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+        <circle cx="14" cy="14" r="11" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".18"/>
+        <path d="M14 3 A11 11 0 1 1 3.54 17.4" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="14" cy="14" r="3.2" fill="var(--accent)"/>
+      </svg>
+      The Circle
+    </a>
+    <span class="badge" title="The people and payments in the demo are made up">Demo<span class="long">&nbsp;· no real money</span></span>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ===== Hero ===== -->
+  <section class="hero" aria-labelledby="hero-h">
+    <div>
+      <p class="eyebrow">For the circle organiser</p>
+      <h1 id="hero-h">Organising a savings circle? Keep everything in one place.</h1>
+      <p class="sub">Track who has contributed, see whose turn is next and keep your savings circle organised.</p>
+
+      <div class="cta-group">
+        <a class="btn primary" href="app.html">
+          Try the prototype
+          <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 5.5L15.5 10 11 14.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="btn secondary form-cta" href="#" target="_blank" rel="noopener noreferrer">
+          Complete the form
+          <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16h9a1.5 1.5 0 0 0 1.5-1.5V12M11 4h5v5M16 4l-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <p class="cta-note">The form opens in a new tab.</p>
+      </div>
+
+      <p class="demo-note">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 9v5M10 6.2v.1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <span><b>This is a demo.</b> The people and payments are made up. No real money is held or moved. You do not need to sign up.</span>
+      </p>
+    </div>
+
+    <!-- A picture of the demo, using the demo's own made-up sample data -->
+    <div class="card preview" aria-label="Example from the demo">
+      <p class="label">This month · Example</p>
+      <div class="preview-top">
+        <div class="ring" aria-hidden="true">
+          <svg viewBox="0 0 112 112">
+            <circle cx="56" cy="56" r="45" fill="none" stroke="var(--ring-empty)" stroke-width="1.5"/>
+            <circle cx="56" cy="11" r="7.5" fill="var(--paid)"/>
+            <circle cx="82.45" cy="19.59" r="7.5" fill="var(--paid)"/>
+            <circle cx="98.80" cy="42.09" r="7.5" fill="var(--surface)" stroke="var(--ring-empty)" stroke-width="2.5"/>
+            <circle cx="98.80" cy="69.91" r="7.5" fill="var(--paid)"/>
+            <circle cx="82.45" cy="92.41" r="7.5" fill="var(--surface)" stroke="var(--ring-empty)" stroke-width="2.5"/>
+            <circle cx="56" cy="101" r="7.5" fill="var(--paid)"/>
+            <circle cx="29.55" cy="92.41" r="7.5" fill="var(--surface)" stroke="var(--ring-empty)" stroke-width="2.5"/>
+            <circle cx="13.20" cy="69.91" r="7.5" fill="var(--paid)"/>
+            <circle cx="13.20" cy="42.09" r="7.5" fill="var(--paid)"/>
+            <circle cx="29.55" cy="19.59" r="7.5" fill="var(--surface)" stroke="var(--ring-empty)" stroke-width="2.5"/>
+          </svg>
+          <div class="center"><span class="amount">€600</span><span class="of">of €1,000</span></div>
+        </div>
+        <div>
+          <div class="stat-big">6 of 10 paid</div>
+          <div class="stat-sub">4 not paid yet</div>
+        </div>
+      </div>
+      <ul class="preview-rows">
+        <li><span class="grow">Ahmed</span><span class="status paid">✓ Paid</span></li>
+        <li><span class="grow">Chidi</span><span class="status pending">Not paid yet</span></li>
+        <li><span class="grow">Sara</span><span class="status paid">✓ Paid</span></li>
+      </ul>
+      <div class="turn">When everyone has paid, <b>Mary gets €1,000</b>.</div>
+      <p class="caption">Made-up names from the demo.</p>
+    </div>
+  </section>
+
+  <!-- ===== Problem ===== -->
+  <section class="block" aria-labelledby="problem-h">
+    <h2 id="problem-h">Organising takes a lot of work</h2>
+    <p class="lead">The organiser keeps track of every payment, follows up with people and reminds everyone whose turn it is.</p>
+    <div class="problem">
+      <div class="card">
+        <h3>With a notebook and messages</h3>
+        <ul>
+          <li><span class="dot-ico before" aria-hidden="true">✕</span><span>You write down each payment by hand.</span></li>
+          <li><span class="dot-ico before" aria-hidden="true">✕</span><span>You send messages to check who has paid.</span></li>
+          <li><span class="dot-ico before" aria-hidden="true">✕</span><span>People ask you again and again whose turn it is.</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>With The Circle</h3>
+        <ul>
+          <li><span class="dot-ico after" aria-hidden="true">✓</span><span>You see who has paid and who has not, on one screen.</span></li>
+          <li><span class="dot-ico after" aria-hidden="true">✓</span><span>You see the full 10-month list of whose turn it is.</span></li>
+          <li><span class="dot-ico after" aria-hidden="true">✓</span><span>You record each month when it is done.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== How it works ===== -->
+  <section class="block" aria-labelledby="how-h">
+    <h2 id="how-h">How it works</h2>
+    <p class="lead">Three simple steps, every month.</p>
+    <ol class="steps">
+      <li class="card step">
+        <div class="step-head">
+          <span class="step-num" aria-hidden="true">1</span>
+          <h3>Track contributions</h3>
+          <span class="step-ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 20 20"><path d="M5 10.5l3.2 3.2L15 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+        <p>See which members have paid this month and which payments are still missing. Tap <b>“Mark paid”</b> when someone pays.</p>
+      </li>
+      <li class="card step">
+        <div class="step-head">
+          <span class="step-num" aria-hidden="true">2</span>
+          <h3>See whose turn is next</h3>
+          <span class="step-ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 20 20"><rect x="3" y="4.5" width="14" height="12.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 8.5h14M7 2.8v3.4M13 2.8v3.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+        </div>
+        <p>See the 10-month list. It shows who gets the €1,000 next, and who already had their turn.</p>
+      </li>
+      <li class="card step">
+        <div class="step-head">
+          <span class="step-num" aria-hidden="true">3</span>
+          <h3>Record the monthly payout</h3>
+          <span class="step-ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 20 20"><rect x="3" y="8" width="14" height="9" rx="1.8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2.5 8h15M10 8v9M10 8C8.5 5 5.5 4.5 5.5 6.5S10 8 10 8zM10 8c1.5-3 4.5-3.5 4.5-1.5S10 8 10 8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
+        </div>
+        <p>When everyone has paid, confirm that you gave the €1,000 to the right person. The next month then starts.</p>
+        <p class="honest"><b>Good to know:</b> this only records what you did. It does not send or move any money.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ===== Final call to action ===== -->
+  <section class="block" aria-labelledby="final-h">
+    <div class="card final">
+      <h2 id="final-h">Make organising your savings circle simpler.</h2>
+      <p>Try the demo. It has a made-up circle of 10 friends. Tap around — nothing you do is real.</p>
+      <a class="btn primary" href="app.html">
+        Try the prototype
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 5.5L15.5 10 11 14.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p><b>The Circle is an educational demo.</b> All people and payments are made up. It does not hold, send or move real money.</p>
+</footer>
+
+<div class="toast-region" id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==========================================================
+     PASTE YOUR FORM LINK HERE (keep the quotes), e.g.
+     var FORM_URL = 'https://forms.gle/abc123';
+     ========================================================== */
+  var FORM_URL = '[FORM_URL]';
+
+  var ready = /^https?:\/\//i.test(FORM_URL);
+  var links = document.querySelectorAll('.form-cta');
+  for (var i = 0; i < links.length; i++) {
+    if (ready) {
+      links[i].setAttribute('href', FORM_URL);
+    } else {
+      links[i].addEventListener('click', function (e) {
+        e.preventDefault();
+        var region = document.getElementById('toasts');
+        region.innerHTML = '<div class="toast">The form link has not been added yet.</div>';
+        setTimeout(function () { region.innerHTML = ''; }, 4000);
+      });
+    }
+  }
+})();
+</script>
+</body>
+</html>
